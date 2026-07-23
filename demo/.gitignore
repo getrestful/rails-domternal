@@ -1,0 +1,54 @@
+# See https://help.github.com/articles/ignoring-files for more about ignoring files.
+
+# Ignore bundler config.
+/.bundle
+
+# Ignore all environment files.
+/.env*
+
+# Ignore all default log files, and any pidfiles.
+/log/*
+/tmp/pids/*
+!/log/.keep
+!/tmp/pids/.keep
+
+# Ignore pidfiles, but keep the directory.
+/tmp/pids/*
+!/tmp/pids/
+!/tmp/pids/.keep
+
+# Ignore uploaded files, sqlite3 databases, and storage in development.
+/storage/*
+!/storage/.keep
+/tmp/storage/*
+!/tmp/storage/
+!/tmp/storage/.keep
+
+/public/assets
+
+# Ignore master key for decrypting credentials and any other unencrypted secrets.
+/config/master.key
+
+/tmp/*
+!/tmp/pids/
+!/tmp/storage/
+!/tmp/.keep
+
+.byebug_history
+
+# Ignore node_modules
+node_modules/
+
+# Ignore precompiled javascript packs
+/public/packs
+/public/packs-test
+/public/assets
+
+# Ignore byebug command history file.
+.byebug_history
+
+# Ignore Kamal secrets
+.kamal/secrets
+
+# Ignore a locally installed web console
+/storage/*.sqlite3

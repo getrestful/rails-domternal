@@ -1,0 +1,27 @@
+/*
+ * Domternal theme — loaded from jsDelivr by default so it works regardless of asset
+ * strategy. If you'd rather bundle it (cssbundling-rails/npm), remove this @import,
+ * `npm add @domternal/theme`, and `@import "@domternal/theme/scss"` from your own
+ * stylesheet entrypoint instead.
+ */
+@import url("https://cdn.jsdelivr.net/npm/@domternal/theme@latest/dist/domternal-theme.css");
+
+domternal-editor {
+  display: block;
+  border: 1px solid var(--dm-border-color, #d0d5dd);
+  border-radius: 6px;
+}
+
+domternal-editor .domternal-surface {
+  padding: 0.75rem 1rem;
+  min-height: 12rem;
+}
+
+domternal-editor .domternal-toolbar {
+  border-bottom: 1px solid var(--dm-border-color, #d0d5dd);
+}
+
+.domternal-content img {
+  max-width: 100%;
+  height: auto;
+}
