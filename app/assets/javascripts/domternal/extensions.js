@@ -14,11 +14,27 @@ const registry = new Map([
   ["mention", async () => (await import("@domternal/extension-mention")).Mention],
   ["markdown", async () => (await import("@domternal/extension-markdown")).Markdown],
   ["emoji", async () => (await import("@domternal/extension-emoji")).Emoji],
-  ["math", async () => (await import("@domternal/extension-math")).Math],
+  ["math", async () => {
+    const { MathBlock, MathInline, MathEditing } = await import("@domternal/extension-math")
+    return [MathBlock, MathInline, MathEditing]
+  }],
   ["code_block", async () => (await import("@domternal/extension-code-block-lowlight")).CodeBlockLowlight],
-  ["toc", async () => (await import("@domternal/extension-toc")).TableOfContents],
-  ["block_controls", async () => (await import("@domternal/extension-block-controls")).BlockControls],
-  ["details", async () => (await import("@domternal/extension-details")).Details],
+  ["toc", async () => {
+    const { UniqueID } = await import("@domternal/core")
+    const { TableOfContents, TableOfContentsBlock } = await import("@domternal/extension-toc")
+    return [UniqueID, TableOfContents, TableOfContentsBlock]
+  }],
+  // The Notion-style block UX (drag handle, block context menu, slash command, smart
+  // paste, keyboard reorder) ships as five separate extensions rather than one bundle.
+  ["block_controls", async () => {
+    const { BlockHandle, BlockContextMenu, KeyboardReorder, SlashCommand, SmartPaste, FloatingMenu } =
+      await import("@domternal/extension-block-controls")
+    return [BlockHandle, BlockContextMenu, KeyboardReorder, SlashCommand, SmartPaste, FloatingMenu]
+  }],
+  ["details", async () => {
+    const { Details, DetailsSummary, DetailsContent } = await import("@domternal/extension-details")
+    return [Details, DetailsSummary, DetailsContent]
+  }],
 ])
 
 export function registerExtension(name, loader) {

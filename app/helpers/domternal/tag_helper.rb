@@ -15,7 +15,7 @@ module Domternal
     # *   `:extensions` - symbolic extension names (see Rails::Domternal::ExtensionRegistry).
     #     Defaults to the attribute's `has_rich_domternal` declaration, or
     #     `Rails::Domternal.configuration.default_extensions`.
-    # *   `:toolbar` - :full, :minimal, or false. Same defaulting as `:extensions`.
+    # *   `:toolbar` - :full, :minimal, :notion, or false. Same defaulting as `:extensions`.
     # *   `[:data][:direct_upload_url]` - defaults to `rails_direct_uploads_url`.
     # *   `[:data][:blob_url_template]` - defaults to `rails_service_blob_url(":signed_id", ":filename")`.
     def domternal_area_tag(name, value = nil, options = {}, &block)

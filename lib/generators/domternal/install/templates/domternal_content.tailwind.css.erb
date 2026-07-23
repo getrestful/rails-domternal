@@ -1,0 +1,36 @@
+/*
+ * Baseline typography for Domternal content — applies to both the live editor surface
+ * (`<domternal-editor>`) and read-only output (`domternal_content`, class="domternal-content").
+ * Generated once by `domternal:install` and not touched again — edit freely, e.g. swap the
+ * @apply utilities below for your own design tokens.
+ */
+.domternal-content, domternal-editor {
+  h1 { @apply text-3xl font-bold leading-tight mt-6 mb-3; }
+  h2 { @apply text-2xl font-bold leading-snug mt-5 mb-2; }
+  h3 { @apply text-xl font-semibold mt-4 mb-2; }
+  h4, h5, h6 { @apply text-lg font-semibold mt-4 mb-2; }
+
+  p { @apply my-3; }
+
+  ul { @apply list-disc pl-6 my-3; }
+  ol { @apply list-decimal pl-6 my-3; }
+  li { @apply my-1; }
+  li > ul, li > ol { @apply my-1; }
+
+  blockquote { @apply border-l-4 border-gray-300 pl-4 my-3 text-gray-600 italic; }
+
+  code { @apply bg-gray-100 rounded px-1.5 py-0.5 font-mono text-sm; }
+
+  pre { @apply bg-gray-900 text-gray-100 rounded-md px-4 py-3 my-3 overflow-x-auto; }
+  pre code { @apply bg-transparent p-0; }
+
+  a { @apply text-blue-700 underline; }
+
+  img { @apply max-w-full h-auto rounded; }
+
+  table { @apply border-collapse w-full my-3; }
+  th, td { @apply border border-gray-300 px-2.5 py-1.5; }
+  th { @apply font-semibold bg-gray-50; }
+
+  hr { @apply border-t border-gray-300 my-6; }
+}

@@ -69,6 +69,33 @@ import { registerExtension } from "domternal/extensions"
 registerExtension("my_extension", async () => (await import("my-extension-package")).MyExtension)
 ```
 
+### Toolbar modes
+
+`toolbar:` (on `has_rich_domternal`, `domternal_area`, or the global config) accepts:
+
+- `:full` (default) / `:minimal` — a fixed `DomternalToolbar`.
+- `:notion` — no fixed toolbar; instead a selection bubble menu handles inline formatting
+  and a "+" floating menu (shown only via the block handle's button) inserts blocks. Pair
+  this with the `:block_controls` extension, which supplies the drag handle, block context
+  menu, slash command, smart paste, and keyboard reorder:
+
+  ```ruby
+  has_rich_domternal :internal_notes, extensions: %i[starter_kit block_controls toc], toolbar: :notion
+  ```
+- `false` — no chrome at all, just the raw editable surface.
+
+### Content styling
+
+`rails g domternal:install` also generates a baseline typography stylesheet (headings,
+lists, blockquotes, code, tables — none of which Domternal's own theme opinionates on)
+scoped to `.domternal-content`/`<domternal-editor>`, covering both the live editor and
+`domternal_content` read-only output. It's generated once and meant to be edited freely.
+
+By default it autodetects `tailwindcss-rails` (`app/assets/tailwind/application.css`) and
+generates a `@apply`-based version wired into your existing Tailwind build; otherwise it
+generates plain CSS under `app/assets/stylesheets/`. Force either explicitly with
+`rails g domternal:install --stylesheet=tailwind` (or `=css`).
+
 ### JavaScript delivery
 
 The install generator pins `@domternal/*` packages from [esm.sh](https://esm.sh) by default

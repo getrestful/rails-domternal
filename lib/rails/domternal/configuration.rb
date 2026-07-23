@@ -6,7 +6,9 @@ module Rails
       # Symbolic extension keys resolved client-side by app/assets/javascripts/domternal/extensions.js
       attr_accessor :default_extensions
 
-      # :full, :minimal, or false
+      # :full, :minimal, :notion, or false. :notion swaps the fixed toolbar for a
+      # selection bubble menu + a "+" floating menu, matching the block handle/slash
+      # command UI the :block_controls extension adds — pair the two.
       attr_accessor :toolbar
 
       # :light, :dark, or :auto

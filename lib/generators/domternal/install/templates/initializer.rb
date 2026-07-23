@@ -7,7 +7,7 @@ Rails::Domternal.configure do |config|
   # `has_rich_domternal :body, extensions: %i[starter_kit image table]`.
   # config.default_extensions = %i[starter_kit image]
 
-  # :full, :minimal, or false — overridable per has_rich_domternal/domternal_area call.
+  # :full, :minimal, :notion, or false — overridable per has_rich_domternal/domternal_area call.
   # config.toolbar = :full
 
   # :light, :dark, or :auto

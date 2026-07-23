@@ -40,6 +40,10 @@ module Domternal
       class_option :npm_version, type: :string, default: "latest",
         desc: "Version/dist-tag used when pinning @domternal/* packages"
 
+      class_option :stylesheet, type: :string, default: nil, enum: %w[css tailwind],
+        desc: "Format for the generated content typography stylesheet. Defaults to " \
+          "autodetecting app/assets/tailwind/application.css (tailwindcss-rails)."
+
       def create_initializer
         template "initializer.rb", "config/initializers/domternal.rb"
       end
@@ -50,6 +54,8 @@ module Domternal
           Add `<%= stylesheet_link_tag "domternal" %>` to your layout (next to your
           application stylesheet tag) to load the Domternal theme and editor styles.
         INSTRUCTIONS
+
+        create_content_stylesheet
       end
 
       def create_migrations
@@ -93,6 +99,37 @@ module Domternal
 
       def using_jsbundling?
         Pathname(destination_root).join("package.json").exist?
+      end
+
+      def tailwind_stylesheet?
+        options["stylesheet"] == "tailwind" ||
+          (options["stylesheet"].nil? && tailwind_entry_path.exist?)
+      end
+
+      def tailwind_entry_path
+        Pathname(destination_root).join("app/assets/tailwind/application.css")
+      end
+
+      def create_content_stylesheet
+        if tailwind_stylesheet?
+          template "domternal_content.tailwind.css.erb", "app/assets/tailwind/domternal_content.css"
+          import_line = %(@import "./domternal_content.css";\n)
+          if tailwind_entry_path.exist?
+            append_to_file tailwind_entry_path.to_s, import_line unless
+              tailwind_entry_path.read.include?(import_line.strip)
+            say "Generated app/assets/tailwind/domternal_content.css (Tailwind @apply) and " \
+              "imported it into application.css — it's built into your existing tailwind.css, " \
+              "no extra <link> tag needed.", :green
+          else
+            say 'Generated app/assets/tailwind/domternal_content.css — add ' \
+              '`@import "./domternal_content.css";` to your Tailwind entrypoint yourself ' \
+              "(no app/assets/tailwind/application.css found to wire it into automatically).", :yellow
+          end
+        else
+          template "domternal_content.css.erb", "app/assets/stylesheets/domternal_content.css"
+          say 'Add `<%= stylesheet_link_tag "domternal_content" %>` to your layout to load ' \
+            "the generated content typography.", :green
+        end
       end
 
       def using_bun?

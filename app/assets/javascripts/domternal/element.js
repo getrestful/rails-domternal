@@ -19,6 +19,9 @@ export class DomternalEditorElement extends HTMLElement {
 
   disconnectedCallback() {
     this._toolbar?.destroy()
+    this._bubbleMenu?.destroy()
+    this._floatingMenu?.destroy()
+    this._notionColorPicker?.destroy()
     this._wrapper?.destroy()
     this._mounted = false
   }
@@ -68,7 +71,8 @@ export class DomternalEditorElement extends HTMLElement {
       }
     })
 
-    const { DomternalEditor, DomternalToolbar } = await import("@domternal/vanilla")
+    const { DomternalEditor, DomternalToolbar, DomternalBubbleMenu, DomternalFloatingMenu, DomternalNotionColorPicker } =
+      await import("@domternal/vanilla")
 
     this._wrapper = new DomternalEditor(surfaceHost, {
       extensions,
@@ -79,8 +83,30 @@ export class DomternalEditorElement extends HTMLElement {
       onBlur: () => this._dispatch("domternal:blur")
     })
 
-    if (this.dataset.toolbar && this.dataset.toolbar !== "false") {
-      this._toolbar = new DomternalToolbar(toolbarHost, { editor: this._wrapper.editor })
+    const toolbarMode = this.dataset.toolbar || "full"
+    const editor = this._wrapper.editor
+
+    if (toolbarMode === "notion") {
+      // Notion-style: no fixed toolbar. A selection bubble menu handles inline formatting,
+      // a "+" floating menu (triggered only via the block handle's button, not on every
+      // empty paragraph) inserts blocks, and the block handle/slash command/drag-reorder
+      // themselves come from the "block_controls" extensions — add that to `extensions:`
+      // on has_rich_domternal for this to have anything to control.
+      toolbarHost.remove()
+
+      const bubbleHost = document.createElement("div")
+      bubbleHost.className = "dm-bubble-menu"
+      this.appendChild(bubbleHost)
+      this._bubbleMenu = new DomternalBubbleMenu(bubbleHost, { editor })
+
+      const floatingHost = document.createElement("div")
+      floatingHost.className = "dm-floating-menu"
+      this.appendChild(floatingHost)
+      this._floatingMenu = new DomternalFloatingMenu(floatingHost, { editor, requireExplicitTrigger: true })
+
+      this._notionColorPicker = new DomternalNotionColorPicker({ editor })
+    } else if (toolbarMode !== "false") {
+      this._toolbar = new DomternalToolbar(toolbarHost, { editor })
     } else {
       toolbarHost.remove()
     }
