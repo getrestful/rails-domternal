@@ -21,4 +21,14 @@ Rails::Domternal.configure do |config|
   # introduce markup not covered by the defaults.
   # config.sanitizer_allowed_tags += %w[]
   # config.sanitizer_allowed_attributes += %w[]
+
+  # Column types for the domternal_rich_texts table, read only when the CreateDomternalTables
+  # migration runs — set them BEFORE `bin/rails db:migrate`. Both default to your
+  # config.generators primary_key_type, then to Rails' defaults (:primary_key / :bigint).
+  #
+  # `record_id` stores the primary key of every model declaring has_rich_domternal, so if those
+  # models don't all share one key type — a uuid-pk model next to a bigint-pk one — neither
+  # :uuid nor :bigint fits and you want :string.
+  # config.primary_key_type = :uuid
+  # config.record_id_type = :string
 end

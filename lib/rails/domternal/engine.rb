@@ -32,6 +32,18 @@ module Rails
           include Rails::Domternal::Attribute
         end
       end
+
+      # Opt-in by presence: apps using simple_form get `as: :domternal_area` for free, apps
+      # without it never load the input. Runs after initialization so an app's own
+      # app/inputs/domternal_area_input.rb wins.
+      initializer "domternal.simple_form" do |app|
+        app.config.after_initialize do
+          next unless defined?(::SimpleForm)
+          next if Object.const_defined?(:DomternalAreaInput)
+
+          require "rails/domternal/simple_form_input"
+        end
+      end
     end
   end
 end

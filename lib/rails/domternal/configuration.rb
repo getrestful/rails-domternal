@@ -24,6 +24,15 @@ module Rails
       attr_accessor :allowed_mime_types
       attr_accessor :max_file_size
 
+      # Column types used by the CreateDomternalTables migration. Both default to the app's
+      # `config.generators` primary_key_type, then to Rails' defaults.
+      #
+      # Set record_id_type to :string if the models declaring has_rich_domternal don't all
+      # share one primary key type — a uuid-pk model and a bigint-pk model can't both be
+      # referenced by a typed polymorphic column. Only read at migration time.
+      attr_accessor :primary_key_type
+      attr_accessor :record_id_type
+
       # HTML tags/attributes allowed through the safelist sanitizer applied to incoming bodies.
       attr_accessor :sanitizer_allowed_tags
       attr_accessor :sanitizer_allowed_attributes
@@ -36,6 +45,8 @@ module Rails
         @npm_version = "latest"
         @allowed_mime_types = %w[image/png image/jpeg image/gif image/webp image/svg+xml image/avif]
         @max_file_size = 10.megabytes
+        @primary_key_type = nil
+        @record_id_type = nil
 
         @sanitizer_allowed_tags = %w[
           p br div span

@@ -29,8 +29,8 @@ module Domternal
       options[:class] ||= "domternal-content"
 
       options[:data] ||= {}
-      options[:data][:direct_upload_url] ||= main_app.rails_direct_uploads_url
-      options[:data][:blob_url_template] ||= main_app.rails_service_blob_url(":signed_id", ":filename")
+      options[:data][:direct_upload_url] ||= app_routes.rails_direct_uploads_url
+      options[:data][:blob_url_template] ||= app_routes.rails_service_blob_url(":signed_id", ":filename")
       options[:data][:extensions] ||= extensions.join(" ")
       options[:data][:toolbar] ||= toolbar.to_s
       options[:data][:theme] ||= Rails::Domternal.configuration.theme.to_s
@@ -38,13 +38,34 @@ module Domternal
       options[:data][:allowed_mime_types] ||= Rails::Domternal.configuration.allowed_mime_types.join(" ")
 
       editor_tag = content_tag("domternal-editor", "", options)
-      input_tag = hidden_field_tag(name, value.to_s, id: options[:input], form: form)
+      input_tag = hidden_field_tag(name, attribute_value(value), id: options[:input], form: form)
 
       input_tag + editor_tag
     end
 
     def domternal_content(value)
       content_tag(:div, value.to_s.html_safe, class: "domternal-content") # rubocop:disable Rails/OutputSafety -- sanitized by Domternal::RichText before persistence
+    end
+
+    private
+
+    # The body lands in a value="…" attribute, but RichText#to_s is html_safe, and Rails
+    # skips escaping for html_safe strings even inside attributes. Handing it over as a plain
+    # String restores escaping — without this a body containing a double quote closes the
+    # attribute early, losing content on the next edit and allowing attribute injection.
+    def attribute_value(value)
+      string = value.to_s
+      string.html_safe? ? String.new(string) : string
+    end
+
+    # The Active Storage routes live in the host app. `main_app` is the right way to reach
+    # them from a view, but it's only defined where the mounted-helpers module has been
+    # included, which isn't every context this helper can be called from (mailers, bare
+    # ActionView::Base instances, ViewComponent previews).
+    def app_routes
+      return main_app if respond_to?(:main_app)
+
+      ::Rails.application.routes.url_helpers
     end
   end
 end

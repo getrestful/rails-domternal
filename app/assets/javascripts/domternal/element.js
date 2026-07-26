@@ -13,17 +13,67 @@ export class DomternalEditorElement extends HTMLElement {
 
   connectedCallback() {
     if (this._mounted) return
-    this._mounted = true
-    this._mount()
+
+    // Editors that aren't on screen yet (locale tabs, accordions, anything display:none)
+    // wait to mount. Each one pulls its own extension modules and builds a ProseMirror
+    // instance, so a form with one editor per locale would otherwise pay for all of them
+    // up front. Setting the `eager` attribute opts out.
+    if (this.hasAttribute("eager") || !this._canDeferMount()) {
+      this._startMount()
+    } else {
+      this._observeVisibility()
+    }
   }
 
   disconnectedCallback() {
+    this._visibilityObserver?.disconnect()
+    this._visibilityObserver = null
     this._toolbar?.destroy()
     this._bubbleMenu?.destroy()
     this._floatingMenu?.destroy()
     this._notionColorPicker?.destroy()
     this._wrapper?.destroy()
     this._mounted = false
+    this._mountPromise = null
+  }
+
+  // Mounts now if the element is already laid out, otherwise once it first becomes visible.
+  _observeVisibility() {
+    if (this._isVisible()) {
+      this._startMount()
+      return
+    }
+
+    this._visibilityObserver = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return
+      this._visibilityObserver?.disconnect()
+      this._visibilityObserver = null
+      this._startMount()
+    })
+    this._visibilityObserver.observe(this)
+  }
+
+  _canDeferMount() {
+    return typeof IntersectionObserver !== "undefined"
+  }
+
+  _isVisible() {
+    return this.offsetParent !== null || this.getClientRects().length > 0
+  }
+
+  _startMount() {
+    if (!this._mountPromise) {
+      this._mounted = true
+      this._mountPromise = this._mount()
+    }
+    return this._mountPromise
+  }
+
+  // Resolves once the editor is mounted, mounting it immediately if it was still deferred.
+  // Use before reading `value` or driving the editor from outside.
+  async ready() {
+    await this._startMount()
+    return this
   }
 
   attributeChangedCallback(name, _oldValue, newValue) {
@@ -37,9 +87,11 @@ export class DomternalEditorElement extends HTMLElement {
     return id ? document.getElementById(id) : null
   }
 
-  // The wrapper's current HTML, or "" before the editor has mounted.
+  // The editor's current HTML. Falls back to the linked input while the editor is still
+  // deferred or mounting — an unmounted editor never touches the input, so the value the
+  // server rendered is still the right answer and submitting the form is always safe.
   get value() {
-    return this._wrapper?.htmlContent ?? ""
+    return this._wrapper?.htmlContent ?? this.input?.value ?? ""
   }
 
   async _mount() {

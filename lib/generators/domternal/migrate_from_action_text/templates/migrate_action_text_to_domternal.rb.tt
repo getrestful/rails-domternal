@@ -1,0 +1,117 @@
+require "nokogiri"
+
+class MigrateActionTextToDomternal < ActiveRecord::Migration[<%= ActiveRecord::Migration.current_version %>]
+  # ActionText represents embeds as <action-text-attachment sgid="...">, which Domternal has
+  # no node for. Images become plain <img> pointing at the Active Storage redirect URL — the
+  # same markup app/assets/javascripts/domternal/direct_upload.js writes after an upload — so
+  # the editor round-trips them like any other image.
+  #
+  # Attachables of your own (ActionText::Attachable models) can't be guessed at. Map the class
+  # name to something returning replacement HTML, or leave it out and the node is dropped:
+  #
+  #   ATTACHABLE_REPLACEMENTS = {
+  #     "HtmlTable" => ->(record) { record.content },
+  #   }.freeze
+  ATTACHABLE_REPLACEMENTS = {
+<% attachment_replacements.each do |klass, method| -%>
+    "<%= klass %>" => ->(record) { record.<%= method %> },
+<% end -%>
+  }.freeze
+
+  # Read through bare AR models rather than the app's classes: ActionText::RichText#body
+  # returns rendered ActionText::Content, and the attachable class may already be gone.
+  class LegacyRichText < ActiveRecord::Base
+    self.table_name = "action_text_rich_texts"
+  end
+
+  def up
+    say "migrating #{LegacyRichText.count} action_text_rich_texts rows"
+    migrated = skipped = 0
+
+    # Nothing here should bump parent timestamps.
+    ActiveRecord::Base.no_touching do
+      LegacyRichText.find_each do |source|
+        if already_migrated?(source)
+          skipped += 1
+          next
+        end
+
+        Domternal::RichText.create!(
+          record_type: source.record_type,
+          record_id: source.record_id,
+          name: source.name,
+          body: convert(source.body),
+          created_at: source.created_at,
+          updated_at: source.updated_at
+        )
+        migrated += 1
+      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
+        skipped += 1
+        say "  skipped #{source.record_type}##{source.record_id} #{source.name}: #{e.message}"
+      end
+    end
+
+    say "migrated #{migrated}, skipped #{skipped}"
+  end
+
+  def down
+    Domternal::RichText.delete_all
+  end
+
+  private
+
+  def already_migrated?(source)
+    Domternal::RichText.exists?(
+      record_type: source.record_type, record_id: source.record_id, name: source.name
+    )
+  end
+
+  def convert(html)
+    return html if html.blank? || !html.include?("action-text-attachment")
+
+    fragment = Nokogiri::HTML5.fragment(html)
+    fragment.css("action-text-attachment").each do |node|
+      replacement = replacement_for(node)
+      replacement ? node.replace(replacement) : node.remove
+    end
+    fragment.to_html
+  end
+
+  # The sgid is parsed rather than located, so an attachable class that no longer exists
+  # yields nil instead of raising NameError.
+  def replacement_for(node)
+    return if node["sgid"].blank?
+
+    gid = SignedGlobalID.parse(node["sgid"], for: "attachable")
+    return if gid.nil?
+
+    if gid.model_name == "ActiveStorage::Blob"
+      blob = ActiveStorage::Blob.find_by(id: gid.model_id)
+      blob && image_html(blob, node)
+    else
+      custom_replacement(gid)
+    end
+  end
+
+  def custom_replacement(gid)
+    replacement = ATTACHABLE_REPLACEMENTS[gid.model_name]
+    return unless replacement
+
+    record = gid.model_name.safe_constantize&.find_by(id: gid.model_id)
+    record && replacement.call(record)
+  end
+
+  def image_html(blob, node)
+    return unless blob.content_type.to_s.start_with?("image/")
+
+    filename = node["filename"].presence || blob.filename.to_s
+    url = "/rails/active_storage/blobs/redirect/#{blob.signed_id}/#{ERB::Util.url_encode(filename)}"
+    alt = node["alt"].presence || filename
+    img = %(<img src="#{ERB::Util.html_escape(url)}" alt="#{ERB::Util.html_escape(alt)}">)
+
+    caption = node["caption"].presence
+    return img if caption.blank?
+
+    %(<figure>#{img}<figcaption>#{ERB::Util.html_escape(caption)}</figcaption></figure>)
+  end
+end

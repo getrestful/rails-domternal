@@ -37,8 +37,9 @@ module Domternal
         @domternal/extension-toc @domternal/extension-block-controls @domternal/extension-details
       ].index_with { [CORE_PACKAGE, PM_PACKAGE] }.freeze
 
-      class_option :npm_version, type: :string, default: "latest",
-        desc: "Version/dist-tag used when pinning @domternal/* packages"
+      class_option :npm_version, type: :string, default: nil,
+        desc: "Version/dist-tag used when pinning @domternal/* packages. Defaults to the " \
+          "version currently on npm, resolved once so the pins are reproducible."
 
       class_option :stylesheet, type: :string, default: nil, enum: %w[css tailwind],
         desc: "Format for the generated content typography stylesheet. Defaults to " \
@@ -89,8 +90,25 @@ module Domternal
 
       private
 
+      # Resolved once and reused for every pin. A dist-tag like "latest" in the importmap
+      # would mean the browser silently picks up new editor versions between deploys, and —
+      # worse — different @domternal/* packages could resolve to different versions mid-page.
       def npm_version
-        options["npm_version"]
+        @npm_version ||= options["npm_version"] || latest_npm_version || "latest"
+      end
+
+      def latest_npm_version
+        require "net/http"
+        require "json"
+
+        response = Net::HTTP.get_response(URI("https://registry.npmjs.org/@domternal%2Fcore"))
+        return unless response.is_a?(Net::HTTPSuccess)
+
+        JSON.parse(response.body).dig("dist-tags", "latest")
+      rescue StandardError => e
+        say "Could not reach the npm registry to resolve a version (#{e.class}); " \
+          "pinning \"latest\" instead — set an exact version in config/importmap.rb.", :yellow
+        nil
       end
 
       def using_importmap?
@@ -139,22 +157,36 @@ module Domternal
       def wire_up_importmap
         importmap_path = Pathname(destination_root).join("config/importmap.rb")
 
-        pins = +"\n# rails-domternal\n"
+        pins = +<<~HEADER
+          \n# rails-domternal. The @domternal/* packages are loaded from esm.sh at runtime, so
+          # the editor depends on that CDN being reachable from your users' browsers. Every
+          # consumer must externalize the same peers, otherwise esm.sh inlines a second copy of
+          # ProseMirror and keyed plugins collide. To take the CDN off the critical path, use
+          # the jsbundling setup instead — see the README.
+        HEADER
         pins << %(pin_all_from Rails::Domternal::Engine.root.join("app/assets/javascripts/domternal"), under: "domternal", preload: true\n)
         pins << %(pin "@rails/activestorage", to: "activestorage.esm.js", preload: true\n) unless
           importmap_path.read.include?('"@rails/activestorage"')
 
-        pins << %(pin "#{PM_PACKAGE}/", to: "https://esm.sh/#{PM_PACKAGE}@#{npm_version}/"\n)
+        # Nothing from esm.sh is preloaded: element.js imports every @domternal/* package
+        # dynamically when an editor mounts, so preloading would make each page — including
+        # every page with no editor on it — fetch the editor bundle from the CDN up front.
+        pins << %(pin "#{PM_PACKAGE}/", to: "https://esm.sh/#{PM_PACKAGE}@#{npm_version}/", preload: false\n)
 
         all_packages.each do |package, externals|
           url = "https://esm.sh/#{package}@#{npm_version}"
           url += "?external=#{externals.join(",")}" if externals.present?
-          preload = package == CORE_PACKAGE
-          pins << %(pin "#{package}", to: "#{url}"#{preload ? "" : ", preload: false"}\n)
+          pins << %(pin "#{package}", to: "#{url}", preload: false\n)
         end
 
         append_to_file importmap_path.to_s, pins
-        say "Pinned domternal + @domternal/* packages (via esm.sh) in config/importmap.rb", :green
+        say "Pinned domternal + @domternal/* packages at #{npm_version} (via esm.sh) in config/importmap.rb", :green
+        say <<~WARNING, :yellow
+          These pins fetch the editor from esm.sh in the browser at runtime. That's fine for
+          getting started, but it puts a third-party CDN on the path of every page with an
+          editor. For production, prefer the jsbundling setup (npm + esbuild), which resolves
+          and bundles the packages at build time — see "Bundled setup" in the README.
+        WARNING
 
         application_js = Pathname(destination_root).join("app/javascript/application.js")
         if application_js.exist?
