@@ -19,6 +19,6 @@ Rails::Domternal.configure do |config|
   # Tags/attributes let through the safelist sanitizer applied to incoming bodies before they're
   # persisted. Widen this if you enable extensions (e.g. extension-table, extension-details) that
   # introduce markup not covered by the defaults.
-  # config.sanitizer_allowed_tags += %w[]
+  config.sanitizer_allowed_tags += %w[table tr td summary]
   # config.sanitizer_allowed_attributes += %w[]
 end
