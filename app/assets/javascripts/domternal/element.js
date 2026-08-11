@@ -87,6 +87,18 @@ export class DomternalEditorElement extends HTMLElement {
     return id ? document.getElementById(id) : null
   }
 
+  // Public access to the mounted ProseMirror editor. Returns null while the editor is
+  // deferred or mounting; call `await element.ready()` before using it when necessary.
+  get editor() {
+    return this._wrapper?.editor ?? null
+  }
+
+  // Public access to the fixed toolbar, when one is configured. Notion-style and
+  // toolbar-less editors return null.
+  get toolbar() {
+    return this._toolbar ?? null
+  }
+
   // The editor's current HTML. Falls back to the linked input while the editor is still
   // deferred or mounting — an unmounted editor never touches the input, so the value the
   // server rendered is still the right answer and submitting the form is always safe.
