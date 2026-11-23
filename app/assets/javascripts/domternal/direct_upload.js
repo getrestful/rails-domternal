@@ -3,12 +3,15 @@
 // rich_textarea_tag uses for its `data-direct-upload-url` / `data-blob-url-template`.
 import { DirectUpload } from "@rails/activestorage"
 
-export function createUploadHandler({ directUploadUrl, blobUrlTemplate, onUploadError }) {
+export function createUploadHandler({ directUploadUrl, blobUrlTemplate, onUploadStart, onUploadEnd, onUploadError }) {
   return function uploadHandler(file) {
     return new Promise((resolve, reject) => {
       const upload = new DirectUpload(file, directUploadUrl)
+      onUploadStart?.(file)
 
       upload.create((error, blob) => {
+        onUploadEnd?.(file)
+
         if (error) {
           onUploadError?.(error, file)
           reject(error)

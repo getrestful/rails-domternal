@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fire `domternal:upload-start` and `domternal:upload-end` around image uploads.
+
 ## 0.3.0 (2026-08-11)
 
 - Expose the mounted ProseMirror instance through `<domternal-editor>.editor`.

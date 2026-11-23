@@ -69,8 +69,15 @@ element.input               // The linked hidden input, or null when the input i
 
 Call `ready()` before using `editor` or `toolbar` when the editor may still be deferred.
 The `domternal:initialize` event fires after the editor and configured toolbar have been
-created. The `domternal:change` event fires after the linked input is updated; both events
-bubble from the `<domternal-editor>` element.
+created. The `domternal:change` event fires after the linked input is updated.
+
+An image upload fires `domternal:upload-start` when it begins and `domternal:upload-end`
+when it finishes, successfully or not; a failure also fires `domternal:upload-error`.
+The document only changes once the upload has finished, so `domternal:change` stays
+silent in between: an autosave that should wait for the image listens for these. Each
+carries the `File` as `event.detail.file`.
+
+All events bubble from the `<domternal-editor>` element.
 
 `#to_plain_text` converts a body to text the way ActionText does: block boundaries and
 `<br>` become newlines rather than collapsing into spaces, so line-oriented content (one

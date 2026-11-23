@@ -124,6 +124,8 @@ export class DomternalEditorElement extends HTMLElement {
     const uploadHandler = createUploadHandler({
       directUploadUrl: this.dataset.directUploadUrl,
       blobUrlTemplate: this.dataset.blobUrlTemplate,
+      onUploadStart: (file) => this._dispatch("domternal:upload-start", { file }),
+      onUploadEnd: (file) => this._dispatch("domternal:upload-end", { file }),
       onUploadError: (error, file) => this._dispatchUploadError(error, file)
     })
 
